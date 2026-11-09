@@ -66,21 +66,37 @@ def run_sweep(preset: Preset, args: argparse.Namespace, out_root: Path) -> int:
     jobs = []
     for combo in product(*(grid[k] for k in keys)):
         overrides = dict(zip(keys, combo, strict=True))
-        tag = "_".join(f"{k.split('__')[-1]}{v:g}" for k, v in overrides.items()) or "base"
+        tag = "_".join(f"{k.split('__')[-1]}{_fmt(v)}" for k, v in overrides.items()) or "base"
         for rep in range(args.replicates):
             seed = args.seed + rep
             jobs.append((preset.with_overrides(**overrides), seed, out_root / preset.name / tag / f"seed{seed:03d}"))
 
+    # resumable: a run whose history.csv exists is summarised from disk, not rerun
     rows: list[dict[str, object]] = []
+    todo = []
+    for p, s, d in jobs:
+        if (d / "history.csv").exists():
+            rows.append(summarise(pd.read_csv(d / "history.csv"), p.build_architecture(), p, s))
+        else:
+            todo.append((p, s, d))
+    print(f"sweep {preset.name}: {len(rows)} runs found on disk, {len(todo)} to run", flush=True)
+
     with ProcessPoolExecutor(max_workers=args.workers) as pool:
-        futures = [pool.submit(run_one, p, s, d, args.snapshot_every, False) for p, s, d in jobs]
-        for fut in tqdm(as_completed(futures), total=len(futures), desc=f"sweep {preset.name}"):
+        futures = [pool.submit(run_one, p, s, d, args.snapshot_every, False) for p, s, d in todo]
+        for i, fut in enumerate(as_completed(futures), 1):
             rows.append(fut.result())
+            if not sys.stderr.isatty() and i % 10 == 0:
+                print(f"  {i}/{len(futures)} done", flush=True)
     summary = pd.DataFrame(rows)
-    summary_path = out_root / preset.name / "sweep_summary.csv"
+    stem = "_".join(k.split("__")[-1] for k in keys) or "base"
+    summary_path = out_root / preset.name / f"sweep_summary_{stem}.csv"
     summary.to_csv(summary_path, index=False)
     print(f"wrote {summary_path} ({len(summary)} runs)")
     return 0
+
+
+def _fmt(value: object) -> str:
+    return f"{value:g}" if isinstance(value, (int, float)) and not isinstance(value, bool) else str(value)
 
 
 # ┌────────────────────────────────────────────────────────────┐
