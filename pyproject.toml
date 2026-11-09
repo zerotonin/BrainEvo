@@ -26,6 +26,7 @@ dependencies = [
   "pandas>=2.0",
   "matplotlib>=3.7",
   "tqdm>=4.65",
+  "rerandomstats @ git+https://github.com/zerotonin/reRandomStats.git",
 ]
 
 [project.optional-dependencies]
@@ -35,12 +36,13 @@ docs = ["sphinx>=7", "sphinx-rtd-theme>=2", "myst-parser>=2"]
 [project.scripts]
 brainevo-abm = "brainevo.abm.cli:main"
 brainevo-ode = "brainevo.ode.cli:main"
+brainevo-analyse = "brainevo.analysis.cli:main"
 
 [project.urls]
 Repository = "https://github.com/zerotonin/BrainEvo"
 
 [tool.setuptools]
-packages = ["brainevo", "brainevo.abm", "brainevo.ode"]
+packages = ["brainevo", "brainevo.abm", "brainevo.ode", "brainevo.analysis"]
 
 [tool.setuptools_scm]
 write_to = "brainevo/_version.py"

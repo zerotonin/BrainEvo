@@ -10,7 +10,7 @@ extensions = [
     "sphinx.ext.mathjax",
     "myst_parser",
 ]
-autodoc_mock_imports = ["matplotlib", "tqdm"]
+autodoc_mock_imports = ["rerandomstats", "matplotlib", "tqdm"]
 napoleon_google_docstring = True
 html_theme = "sphinx_rtd_theme"
 exclude_patterns = ["_build"]

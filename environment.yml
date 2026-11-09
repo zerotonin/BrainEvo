@@ -13,4 +13,5 @@ dependencies:
   - ruff
   - pip
   - pip:
+      - git+https://github.com/zerotonin/reRandomStats.git
       - -e .
