@@ -1,5 +1,5 @@
 {
-  "_comment": "Copy to local_paths.json (gitignored) and fill in. Paths may use ~.",
+  "_comment": "Copy to local_paths.json (gitignored) and fill in. Paths may use ~. Set BRAINEVO_PROFILE=hpc to select the cluster profile.",
   "active_profile": "local",
   "profiles": {
     "local": {
@@ -7,6 +7,9 @@
     },
     "hpc": {
       "results_root": "<scratch directory on the cluster>",
+      "code_root": "<checkout of this repo on the cluster>",
+      "conda_setup": "<path to activate script, e.g. miniconda3/bin/activate, or a venv's bin/activate>",
+      "conda_env": "<environment name, or empty for a venv>",
       "slurm_account": "<account>",
       "slurm_partition": "<partition>"
     }
