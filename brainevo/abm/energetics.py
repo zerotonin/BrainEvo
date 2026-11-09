@@ -313,8 +313,8 @@ class ATPCostLawParams:
         for name in ("basal", "Fmax_f", "front_share", "front_exponent", "back_share", "half_saturation"):
             if getattr(self, name) <= 0.0:
                 raise ValueError(f"{name} must be > 0")
-        if self.M < 1.0:
-            raise ValueError("M must be >= 1")
+        if self.M <= 0.0:
+            raise ValueError("M must be > 0")
         if not 0.0 <= self.min_circuit < 1.0:
             raise ValueError("min_circuit must lie in [0, 1)")
         if self.wiring_exponent < 0.0 or self.wiring_weight < 0.0:
