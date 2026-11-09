@@ -47,9 +47,15 @@ brainevo-abm run --preset exp4-atp-uniform --seed 1
 # capsule as a third heritable trait, insect-type tracheal oxygen cap at Carboniferous pO2
 brainevo-abm run --preset exp5-capsule-tracheal --set capsule__pO2_kPa=30 --seed 1
 
+# the four taxon test cases (grounded law, sources in brainevo/abm/taxa.py)
+brainevo-abm run --preset taxon-frog-from-mouse --seed 1
+
+# analysis: tables (reRandomStats) and figures from a results root
+brainevo-analyse all --results /path/to/results --out /path/to/figures
+
 # cluster sweeps (SLURM): fill the hpc profile of local_paths.json, then
 source slurm/load_paths.sh && mkdir -p logs
-sbatch slurm/sweep_grounded.sh && sbatch slurm/sweep_thesis.sh && sbatch slurm/sweep_branching.sh
+for s in grounded thesis branching taxa; do sbatch slurm/sweep_$s.sh; done
 
 # the adaptive-dynamics reduction
 brainevo-ode grid            # mean-field prediction over the Fig-7 grid
@@ -75,6 +81,7 @@ brainevo/
 ├── abm/
 │   ├── cost_laws.py   Architecture: the thesis' Shannon energy -> fidelity laws
 │   ├── energetics.py  ATPArchitecture + CapsuleLaw: grounded laws, capsule trait, oxygen cap
+│   ├── taxa.py        arthropod, mouse, frog, primate: sourced parameter sets and expectations
 │   ├── environment.py Gaussian resource axis, depletion, regrowth, volatility
 │   ├── organism.py    one agent
 │   ├── population.py  life cycle: forage, reproduce, mutate, cull

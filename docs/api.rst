@@ -10,6 +10,9 @@ Agent-based model
 .. automodule:: brainevo.abm.energetics
    :members:
 
+.. automodule:: brainevo.abm.taxa
+   :members:
+
 .. automodule:: brainevo.abm.environment
    :members:
 
@@ -32,4 +35,22 @@ Adaptive-dynamics reduction
    :members:
 
 .. automodule:: brainevo.ode.niche
+   :members:
+
+Analysis
+--------
+
+.. automodule:: brainevo.analysis.loading
+   :members:
+
+.. automodule:: brainevo.analysis.establishment
+   :members:
+
+.. automodule:: brainevo.analysis.stats
+   :members:
+
+.. automodule:: brainevo.analysis.bimodality
+   :members:
+
+.. automodule:: brainevo.analysis.viz
    :members:
