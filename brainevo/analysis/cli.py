@@ -48,7 +48,7 @@ def main(argv: list[str] | None = None) -> int:
     out = Path(args.out)
     out.mkdir(parents=True, exist_ok=True)
     commands = {"thesis": analyse_thesis, "grounded": analyse_grounded, "branching": analyse_branching,
-                "taxa": analyse_taxa}
+                "taxa": analyse_taxa, "ablation": analyse_ablation}
     todo = list(commands) if args.command == "all" else [args.command]
     for name in todo:
         try:
@@ -237,9 +237,72 @@ def analyse_taxa(results: Path, out: Path, sweep: str = "taxa") -> None:
                         grp[swept + ["n_eff"]])
 
 
+# ┌────────────────────────────────────────────────────────────┐
+# │ Ablation  « necessity in the agent model »                 │
+# └────────────────────────────────────────────────────────────┘
+
+def analyse_ablation(results: Path, out: Path, sweep: str = "ablation") -> None:
+    runs = load_runs(results, sweep=sweep)
+    out.mkdir(parents=True, exist_ok=True)
+    pattern = r"^taxon-(?P<taxon>[a-z]+)(?:--(?P<ablation>[a-z-]+?))?(?:-from-(?P<seed_from>[a-z]+))?$"
+    parsed = runs["preset"].str.extract(pattern)
+    runs = pd.concat([runs, parsed], axis=1)
+    runs["ablation"] = runs["ablation"].fillna("intact")
+    runs["a_index"] = runs["Eb"] / (runs["Ef"] + runs["Eb"])
+    runs["brain_share"] = (runs["Eb"] + runs["Ec"]) / runs["life__basal_metabolism"]
+    runs["n_eff"] = [_effective_neurons(r) for _, r in runs.iterrows()]
+    runs.to_csv(out / "runs.csv", index=False)
+
+    naive = runs[runs["seed_from"].isna() & (runs["tag"] == "base")]
+    if len(naive):
+        table = naive.groupby(["taxon", "ablation"]).agg(
+            n=("seed", "size"), a_index=("a_index", "median"), n_eff=("n_eff", "median"),
+            brain_share=("brain_share", "median"), established=("established", "mean"),
+            year_established=("year_established", "median"))
+        table.to_csv(out / "ablation_table.csv")
+        tests = []
+        for taxon, grp in naive.groupby("taxon"):
+            for response in ("a_index", "n_eff", "brain_share"):
+                pw = across_levels(grp, "ablation", response)
+                if len(pw):
+                    tests.append(pw.assign(taxon=taxon))
+        if tests:
+            pd.concat(tests, ignore_index=True).to_csv(out / "ablation_pairwise.csv", index=False)
+        for response in ("a_index", "n_eff", "brain_share"):
+            labelled = naive.assign(ablation=naive["taxon"] + "\n" + naive["ablation"])
+            fig = plot_sensitivity(labelled, ["ablation"], response)
+            save_figure(fig, f"ablation_{response}", out, naive[["taxon", "ablation", "seed", response]])
+
+    frog = runs[(runs["taxon"] == "frog") & (runs["seed_from"] == "mouse")]
+    if len(frog):
+        frog.groupby("ablation").agg(n=("seed", "size"), n_eff=("n_eff", "median"), Eb=("Eb", "median")).to_csv(
+            out / "frog_loss_under_ablation.csv")
+        across_levels(frog, "ablation", "n_eff").to_csv(out / "frog_loss_pairwise.csv", index=False)
+        save_figure(plot_sensitivity(frog, ["ablation"], "n_eff"), "frog_loss_under_ablation", out,
+                    frog[["ablation", "seed", "n_eff"]])
+
+    demand = runs[(runs["taxon"] == "mouse") & (runs["seed_from"] == "mouse") & (runs["tag"] != "base")]
+    if len(demand) and demand["atp__M"].nunique() > 1:
+        save_figure(plot_sensitivity(demand, ["atp__M"], "n_eff"), "demand_loss", out,
+                    demand[["atp__M", "seed", "n_eff"]])
+        across_levels(demand, "atp__M", "n_eff").to_csv(out / "demand_loss_pairwise.csv", index=False)
+
+    regain = runs[(runs["taxon"] == "mouse") & (runs["seed_from"] == "frog")]
+    if len(regain):
+        hists = {"mouse law from frog state": [pd.read_csv(Path(d) / "history.csv") for d in regain["run_dir"]]}
+        arch = architecture_from_params(load_params(Path(regain["run_dir"].iloc[0])))
+        mixed = MeanField(arch).best_mixed()
+        pred = None
+        if mixed:
+            capsule = float(arch.optimal_capsule(mixed.Eb))
+            pred = {"mouse law from frog state": {"Ef": mixed.Ef, "Eb": mixed.Eb, "Ec": capsule}}
+        save_figure(plot_taxon_trajectories(hists, pred), "regain_trajectories", out,
+                    regain[["seed", "Ef", "Eb", "Ec"]])
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="brainevo-analyse", description="Analyse brainevo-abm sweep results.")
-    parser.add_argument("command", choices=["thesis", "grounded", "branching", "taxa", "all"])
+    parser.add_argument("command", choices=["thesis", "grounded", "branching", "taxa", "ablation", "all"])
     parser.add_argument("--results", type=Path, required=True, help="results root holding the sweep directories")
     parser.add_argument("--out", type=Path, required=True, help="directory for tables and figures")
     parser.add_argument("--sweep", default=None, help="sweep directory name if it differs from the command")
