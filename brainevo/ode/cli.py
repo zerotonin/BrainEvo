@@ -73,9 +73,44 @@ def main(argv: list[str] | None = None) -> int:
         "grid": lambda: grid(args, out),
         "niche-flow": lambda: niche_flow(base, out, args),
         "niche-pip": lambda: niche_pip(base, out, args),
+        "predictions": lambda: predictions(out),
     }[args.command]()
     print(f"wrote figures to {out}")
     return 0
+
+
+def predictions(out: Path) -> None:
+    """Necessity table and emergent-feature tests for the taxon cases (mean field only)."""
+    from brainevo.abm.taxa import TAXA
+    from brainevo.ode.predictions import (
+        ablation_table,
+        haller_curve,
+        minimal_circuit_bounds,
+        reduction_vs_demand,
+        reversibility,
+    )
+    from brainevo.ode.viz import plot_ablation_table, plot_haller, plot_reduction, plot_reversibility
+
+    out = out / "predictions"
+    out.mkdir(parents=True, exist_ok=True)
+    table = ablation_table()
+    table.to_csv(out / "ablation_table.csv", index=False)
+    for value in ("a_index", "neurons", "brain_share", "deficit"):
+        save_figure(plot_ablation_table(table, value), f"ablation_{value}", out, table)
+    ratios = np.logspace(-2, 2, 17)
+    curves, slopes = {}, {}
+    for name in ("mouse", "frog", "primate"):
+        curves[name], slopes[name] = haller_curve(TAXA[name], ratios)
+    save_figure(plot_haller(curves, slopes), "haller", out, pd.concat(curves.values()))
+    pd.DataFrame({"taxon": list(slopes), "allometric_exponent": list(slopes.values())}).to_csv(
+        out / "haller_exponents.csv", index=False)
+    mouse = TAXA["mouse"]
+    Ms = np.linspace(0.05, mouse.atp.M, 30)
+    reduction = reduction_vs_demand(mouse, Ms)
+    save_figure(plot_reduction(reduction), "reduction_vs_demand", out, reduction)
+    loop = reversibility(mouse, Ms[::2])
+    save_figure(plot_reversibility(loop), "reversibility", out, loop)
+    minimal_circuit_bounds().to_csv(out / "minimal_circuit_bounds.csv", index=False)
 
 
 def bifurcation(mk: Callable[..., MeanField], out: Path, args: argparse.Namespace) -> None:
@@ -190,7 +225,7 @@ def niche_pip(base: CostLawParams, out: Path, args: argparse.Namespace) -> None:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="brainevo-ode", description="Adaptive-dynamics reduction of FEBE.")
     p.add_argument("command", choices=["landscape", "valley", "bifurcation", "hysteresis", "fold-map", "grid",
-                                       "niche-flow", "niche-pip"])
+                                       "niche-flow", "niche-pip", "predictions"])
     p.add_argument("--Fmax", type=float, default=1.2)
     p.add_argument("--M", type=float, default=2.5)
     p.add_argument("--P", type=float, default=2.0)

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from matplotlib.figure import Figure
 
 from brainevo.constants import (
@@ -149,4 +150,76 @@ def plot_niche_trajectory(t: FloatArray, Ef: FloatArray, Eb: FloatArray, sigma: 
     axes[2].set_xlabel("evolutionary time (canonical units)")
     fig.align_ylabels(axes)
     fig.tight_layout()
+    return fig
+
+
+# ┌────────────────────────────────────────────────────────────┐
+# │ Predictions  « ablation, Haller, reduction, reversibility »│
+# └────────────────────────────────────────────────────────────┘
+
+def plot_ablation_table(table: pd.DataFrame, value: str = "a_index") -> Figure:
+    """Dot matrix: taxa on y, ablations on x, dot size and label = value."""
+    taxa = list(dict.fromkeys(table["taxon"]))
+    ablations = list(dict.fromkeys(table["ablation"]))
+    fig, ax = plt.subplots(figsize=(0.95 * len(ablations) + 1.2, 0.5 * len(taxa) + 0.9), constrained_layout=True)
+    vmax = float(np.nanmax(table[value])) or 1.0
+    for i, t in enumerate(taxa):
+        for j, a in enumerate(ablations):
+            v = table[(table["taxon"] == t) & (table["ablation"] == a)][value]
+            if v.empty or not np.isfinite(v.iloc[0]):
+                ax.text(j, i, "n/a", ha="center", va="center", fontsize=6, color="0.5")
+                continue
+            ax.scatter(j, i, s=400 * float(v.iloc[0]) / vmax + 5, color=COLOUR_BACK, alpha=0.75, edgecolor="none")
+            ax.text(j, i, f"{float(v.iloc[0]):.2f}", ha="center", va="center", fontsize=6)
+    ax.set_xticks(range(len(ablations)), ablations, rotation=30, ha="right", fontsize=7)
+    ax.set_yticks(range(len(taxa)), taxa)
+    ax.invert_yaxis()
+    ax.set_title(value.replace("_", " "), fontsize=8)
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+    return fig
+
+
+def plot_haller(tables: dict[str, pd.DataFrame], slopes: dict[str, float]) -> Figure:
+    """Absolute neuron number against body mass (log-log), one line per taxon."""
+    fig, ax = plt.subplots(figsize=FIGURE_SINGLE, constrained_layout=True)
+    colours = [COLOUR_BACK, COLOUR_FRONT, COLOUR_NICHE, COLOUR_MIXED]
+    for (name, table), colour in zip(tables.items(), colours, strict=False):
+        ax.plot(table["mass_ratio"], table["neurons_abs"] / table["neurons_abs"].iloc[0], color=colour, lw=1.2,
+                label=f"{name}: exponent {slopes[name]:.2f}")
+    r = np.array([tables[next(iter(tables))]["mass_ratio"].min(), tables[next(iter(tables))]["mass_ratio"].max()])
+    for exp, ls in ((0.67, ":"), (0.75, "--")):
+        ax.plot(r, (r / r[0]) ** exp, color="0.5", lw=0.8, ls=ls, label=f"observed {exp:g}")
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_xlabel("body mass (relative)")
+    ax.set_ylabel("brain neurons (relative)")
+    ax.legend(fontsize=6, frameon=False)
+    return fig
+
+
+def plot_reduction(table: pd.DataFrame) -> Figure:
+    fig, ax = plt.subplots(figsize=FIGURE_SINGLE, constrained_layout=True)
+    ax.plot(table["M_rel"], table["fraction_retained"], color=COLOUR_BACK, lw=1.2)
+    lost = table[~table["back_end_present"]]
+    if len(lost):
+        ax.axvspan(0, lost["M_rel"].max(), color=COLOUR_FRONT_ONLY, alpha=0.2, lw=0, label="back-end switched off")
+    for frac, label in ((0.9, "domestication 10 %"), (0.7, "domestication 30 %")):
+        ax.axhline(frac, color="0.6", lw=0.6, ls=":")
+        ax.text(1.0, frac, label, fontsize=5.5, va="bottom", ha="right", color="0.4")
+    ax.set_xlabel("back-end return $M$ (fraction of the taxon's value)")
+    ax.set_ylabel("neurons retained (fraction)")
+    ax.set_ylim(0, 1.05)
+    ax.legend(fontsize=6, frameon=False, loc="lower right")
+    return fig
+
+
+def plot_reversibility(table: pd.DataFrame) -> Figure:
+    fig, ax = plt.subplots(figsize=FIGURE_SINGLE, constrained_layout=True)
+    for direction, colour, marker in (("down", COLOUR_SWITCH, "v"), ("up", COLOUR_NICHE, "^")):
+        sub = table[table["direction"] == direction]
+        ax.plot(sub["M"], sub["neurons"], color=colour, lw=1.0, marker=marker, ms=3, label=f"ramp {direction}")
+    ax.set_xlabel("back-end return $M$")
+    ax.set_ylabel("neurons (fraction of ceiling)")
+    ax.legend(fontsize=6, frameon=False)
     return fig
