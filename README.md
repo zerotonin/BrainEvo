@@ -47,6 +47,10 @@ brainevo-abm run --preset exp4-atp-uniform --seed 1
 # capsule as a third heritable trait, insect-type tracheal oxygen cap at Carboniferous pO2
 brainevo-abm run --preset exp5-capsule-tracheal --set capsule__pO2_kPa=30 --seed 1
 
+# cluster sweeps (SLURM): fill the hpc profile of local_paths.json, then
+source slurm/load_paths.sh && mkdir -p logs
+sbatch slurm/sweep_grounded.sh && sbatch slurm/sweep_thesis.sh && sbatch slurm/sweep_branching.sh
+
 # the adaptive-dynamics reduction
 brainevo-ode grid            # mean-field prediction over the Fig-7 grid
 brainevo-ode bifurcation     # E_b* branches against the overhead P
