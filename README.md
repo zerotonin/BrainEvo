@@ -55,7 +55,10 @@ brainevo-analyse all --results /path/to/results --out /path/to/figures
 
 # cluster sweeps (SLURM): fill the hpc profile of local_paths.json, then
 source slurm/load_paths.sh && mkdir -p logs
-for s in grounded thesis branching taxa; do sbatch slurm/sweep_$s.sh; done
+for s in grounded thesis branching taxa ablation; do sbatch slurm/sweep_$s.sh; done
+
+# necessity table, Haller's rule, demand loss, reversibility (mean field)
+brainevo-ode predictions --out /path/to/figures
 
 # the adaptive-dynamics reduction
 brainevo-ode grid            # mean-field prediction over the Fig-7 grid

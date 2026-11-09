@@ -13,6 +13,9 @@ Agent-based model
 .. automodule:: brainevo.abm.taxa
    :members:
 
+.. automodule:: brainevo.abm.ablations
+   :members:
+
 .. automodule:: brainevo.abm.environment
    :members:
 
@@ -32,6 +35,9 @@ Adaptive-dynamics reduction
    :members:
 
 .. automodule:: brainevo.ode.canonical
+   :members:
+
+.. automodule:: brainevo.ode.predictions
    :members:
 
 .. automodule:: brainevo.ode.niche
