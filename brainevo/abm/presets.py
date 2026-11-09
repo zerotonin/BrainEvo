@@ -57,6 +57,22 @@ class Preset:
             updates[g] = replace(current, **kv)
         return replace(self, **updates)
 
+    @classmethod
+    def from_dict(cls, data: dict[str, object]) -> Preset:
+        """Rebuild a preset from ``to_dict`` output (e.g. a run's params.json)."""
+        atp_data = data.get("atp")
+        atp = None
+        if atp_data is not None:
+            atp_data = dict(atp_data)  # type: ignore[arg-type]
+            capsule = atp_data.pop("capsule", None)
+            atp = ATPCostLawParams(**atp_data, capsule=None if capsule is None else CapsuleLaw(**capsule))
+        return cls(
+            name=str(data["name"]), description=str(data.get("description", "")), years=int(data["years"]),  # type: ignore[arg-type]
+            cost=CostLawParams(**data["cost"]), environment=EnvironmentParams(**data["environment"]),  # type: ignore[arg-type]
+            life=LifeHistoryParams(**data["life"]), mutation=MutationParams(**data["mutation"]),  # type: ignore[arg-type]
+            init=InitialisationParams(**data["init"]), atp=atp,  # type: ignore[arg-type]
+        )
+
     def to_dict(self) -> dict[str, object]:
         return {
             "name": self.name, "description": self.description, "years": self.years,
@@ -138,3 +154,10 @@ PRESETS: dict[str, Preset] = {
     p.name: p for p in (EXP1_COST_SWEEP, EXP1_OVERHEAD_SWEEP, EXP2_TUNING, EXP2_RELATIVE_CONTROL, EXP3_VOLATILITY,
                         EXP4_ATP_UNIFORM, EXP4_ATP_TUNING, EXP5_CAPSULE_CONVECTIVE, EXP5_CAPSULE_TRACHEAL)
 }
+
+
+def all_presets() -> dict[str, Preset]:
+    """Experiment presets plus the taxon test cases (which live in :mod:`brainevo.abm.taxa`)."""
+    from brainevo.abm.taxa import taxon_presets  # local import: taxa builds on the presets above
+
+    return {**PRESETS, **taxon_presets()}

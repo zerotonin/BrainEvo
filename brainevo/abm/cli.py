@@ -28,10 +28,12 @@ from brainevo.abm.cost_laws import Architecture
 from brainevo.abm.energetics import ATPArchitecture
 from brainevo.abm.environment import Environment
 from brainevo.abm.population import Population
-from brainevo.abm.presets import PRESETS, Preset
+from brainevo.abm.presets import Preset, all_presets
 from brainevo.abm.viz import plot_trajectories
 from brainevo.config import MissingLocalPathsError, resolve_results_root
 from brainevo.figures import apply_style, save_figure
+
+ALL_PRESETS = all_presets()
 
 TAIL_YEARS = 300
 """Window at the end of a run over which end-point means are taken."""
@@ -48,7 +50,7 @@ def main(argv: list[str] | None = None) -> int:
         out_root = resolve_results_root(args.out)
     except MissingLocalPathsError as err:
         parser.error(str(err))
-    preset = PRESETS[args.preset].with_overrides(**parse_overrides(args.set))
+    preset = ALL_PRESETS[args.preset].with_overrides(**parse_overrides(args.set))
     if args.years:
         preset = preset.__class__(**{**preset.__dict__, "years": args.years})
 
@@ -76,18 +78,20 @@ def run_sweep(preset: Preset, args: argparse.Namespace, out_root: Path) -> int:
     todo = []
     for p, s, d in jobs:
         if (d / "history.csv").exists():
-            rows.append(summarise(pd.read_csv(d / "history.csv"), p.build_architecture(), p, s))
+            rows.append({**summarise(pd.read_csv(d / "history.csv"), p.build_architecture(), p, s), "out_dir": d})
         else:
             todo.append((p, s, d))
     print(f"sweep {preset.name}: {len(rows)} runs found on disk, {len(todo)} to run", flush=True)
 
     with ProcessPoolExecutor(max_workers=args.workers) as pool:
-        futures = [pool.submit(run_one, p, s, d, args.snapshot_every, False) for p, s, d in todo]
+        futures = {pool.submit(run_one, p, s, d, args.snapshot_every, False): d for p, s, d in todo}
         for i, fut in enumerate(as_completed(futures), 1):
-            rows.append(fut.result())
+            rows.append({**fut.result(), "out_dir": futures[fut]})
             if not sys.stderr.isatty() and i % 10 == 0:
                 print(f"  {i}/{len(futures)} done", flush=True)
     summary = pd.DataFrame(rows)
+    summary.insert(2, "tag", [r["out_dir"].parent.name for r in rows])  # type: ignore[union-attr]
+    summary = summary.drop(columns="out_dir")
     stem = "_".join(k.split("__")[-1] for k in keys) or "base"
     summary_path = out_root / preset.name / f"sweep_summary_{stem}.csv"
     summary.to_csv(summary_path, index=False)
@@ -170,7 +174,7 @@ def build_parser() -> argparse.ArgumentParser:
     sub = parser.add_subparsers(dest="command", required=True)
     for name in ("run", "sweep"):
         p = sub.add_parser(name)
-        p.add_argument("--preset", choices=sorted(PRESETS), required=True)
+        p.add_argument("--preset", choices=sorted(ALL_PRESETS), required=True)
         p.add_argument("--seed", type=int, default=0)
         p.add_argument("--years", type=int, default=None, help="override the preset's duration")
         p.add_argument("--out", type=Path, default=None, help="results root (else local_paths.json)")
