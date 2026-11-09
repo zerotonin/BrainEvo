@@ -241,9 +241,21 @@ def analyse_taxa(results: Path, out: Path, sweep: str = "taxa") -> None:
 # │ Ablation  « necessity in the agent model »                 │
 # └────────────────────────────────────────────────────────────┘
 
+def _intact_baselines(results: Path, taxa_sweep: str = "taxa") -> pd.DataFrame:
+    """The unablated taxon runs (naive founders, base tag) from the taxa sweep,
+    so the ablation table has an ``intact`` column to compare against."""
+    try:
+        taxa = load_runs(results, sweep=taxa_sweep)
+    except FileNotFoundError:
+        return pd.DataFrame()
+    intact = taxa[(taxa["tag"] == "base") & ~taxa["preset"].str.contains("-from-")]
+    return intact.assign(sweep=taxa_sweep)
+
+
 def analyse_ablation(results: Path, out: Path, sweep: str = "ablation") -> None:
     runs = load_runs(results, sweep=sweep)
     out.mkdir(parents=True, exist_ok=True)
+    runs = pd.concat([runs, _intact_baselines(results)], ignore_index=True)
     pattern = r"^taxon-(?P<taxon>[a-z]+)(?:--(?P<ablation>[a-z-]+?))?(?:-from-(?P<seed_from>[a-z]+))?$"
     parsed = runs["preset"].str.extract(pattern)
     runs = pd.concat([runs, parsed], axis=1)
