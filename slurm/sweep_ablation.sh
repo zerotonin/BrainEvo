@@ -18,6 +18,8 @@
 #  under each ablation; demand loss (mouse seeded at its optimum, M
 #  lowered); reversibility (mouse law seeded at the frog's reduced state).
 
+SWEEP_NAME=ablation
+
 # ---- machine-specific paths (slurm/load_paths.sh; nothing hard-coded) ----
 if [ -z "${BRAINEVO_RESULTS_ROOT:-}" ]; then
     _here="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")" 2>/dev/null && pwd || true)"
