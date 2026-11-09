@@ -1,0 +1,16 @@
+name: brainevo
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - numpy>=1.24
+  - scipy>=1.10
+  - pandas>=2.0
+  - matplotlib>=3.7
+  - tqdm
+  - pytest
+  - pytest-cov
+  - ruff
+  - pip
+  - pip:
+      - -e .

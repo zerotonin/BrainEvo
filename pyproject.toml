@@ -1,0 +1,60 @@
+[build-system]
+requires = ["setuptools>=68", "setuptools-scm>=8"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "brainevo"
+dynamic = ["version"]
+description = "Evolution of front- vs back-loaded sensory processing: the FEBE agent-based model and its adaptive-dynamics reduction"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Theo Dodd" },
+  { name = "Bart R. H. Geurten" },
+]
+keywords = ["evolution", "neuroscience", "agent-based model", "adaptive dynamics", "sensory ecology", "energetics"]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: MIT License",
+  "Intended Audience :: Science/Research",
+  "Topic :: Scientific/Engineering :: Bio-Informatics",
+]
+dependencies = [
+  "numpy>=1.24",
+  "scipy>=1.10",
+  "pandas>=2.0",
+  "matplotlib>=3.7",
+  "tqdm>=4.65",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=7", "pytest-cov", "ruff>=0.4"]
+docs = ["sphinx>=7", "sphinx-rtd-theme>=2", "myst-parser>=2"]
+
+[project.scripts]
+brainevo-abm = "brainevo.abm.cli:main"
+brainevo-ode = "brainevo.ode.cli:main"
+
+[project.urls]
+Repository = "https://github.com/zerotonin/BrainEvo"
+
+[tool.setuptools]
+packages = ["brainevo", "brainevo.abm", "brainevo.ode"]
+
+[tool.setuptools_scm]
+write_to = "brainevo/_version.py"
+fallback_version = "0.1.0"
+
+[tool.ruff]
+line-length = 120
+target-version = "py310"
+extend-exclude = ["_legacy", "docs"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E731"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

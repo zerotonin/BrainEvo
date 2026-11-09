@@ -1,0 +1,14 @@
+{
+  "_comment": "Copy to local_paths.json (gitignored) and fill in. Paths may use ~.",
+  "active_profile": "local",
+  "profiles": {
+    "local": {
+      "results_root": "<absolute path to your results directory>"
+    },
+    "hpc": {
+      "results_root": "<scratch directory on the cluster>",
+      "slurm_account": "<account>",
+      "slurm_partition": "<partition>"
+    }
+  }
+}
