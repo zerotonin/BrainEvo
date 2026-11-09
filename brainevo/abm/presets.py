@@ -158,6 +158,7 @@ PRESETS: dict[str, Preset] = {
 
 def all_presets() -> dict[str, Preset]:
     """Experiment presets plus the taxon test cases (which live in :mod:`brainevo.abm.taxa`)."""
-    from brainevo.abm.taxa import taxon_presets  # local import: taxa builds on the presets above
+    from brainevo.abm.ablations import ablation_presets  # local imports: both build on the presets above
+    from brainevo.abm.taxa import taxon_presets
 
-    return {**PRESETS, **taxon_presets()}
+    return {**PRESETS, **taxon_presets(), **ablation_presets()}
