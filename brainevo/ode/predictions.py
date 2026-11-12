@@ -162,7 +162,7 @@ def reversibility(taxon: Taxon, M_values: np.ndarray) -> pd.DataFrame:
 SMALLEST_BRAINS: dict[str, tuple[float, str]] = {
     "Megaphragma mymaripenne (parasitoid wasp)": (7_400, "Polilov 2012 Arthropod Struct Dev 41:29"),
     "Caenorhabditis elegans": (302, "White et al. 1986 Phil Trans R Soc B 314:1"),
-    "Drosophila melanogaster adult brain": (1.0e5, "Raji & Potter 2021 eLife 10:e65376"),
+    "Drosophila melanogaster adult brain": (1.0e5, "Raji & Potter 2021 PLoS ONE 16:e0250381"),
 }
 INSECT_CEILING_NEURONS: tuple[float, str] = (9.6e5, "honeybee brain ~960,000 neurons (Menzel & Giurfa 2001)")
 
